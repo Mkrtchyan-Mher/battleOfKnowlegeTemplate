@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Հարց ու պատասխան խաղ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Armenian:wght@400;500;600;700;800&family=Noto+Serif+Armenian:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14121f;
+    --panel: #1e1b30;
+    --panel-2: #262242;
+    --gold: #e8b23d;
+    --gold-dim: #a3792a;
+    --teal: #4fd1c5;
+    --ink: #f2efea;
+    --muted: #9b96b3;
+    --used: #2a2740;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: radial-gradient(circle at 20% -10%, #241f3d 0%, var(--bg) 55%);
+    color: var(--ink);
+    font-family: "Noto Sans Armenian", sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+  }
+  header{
+    text-align:left;
+    margin-bottom: 36px;
+    border-bottom: 1px solid #332f52;
+    padding-bottom: 20px;
+  }
+  header h1{
+    font-family: "Noto Serif Armenian", serif;
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 40px);
+    margin: 0 0 6px;
+    color: var(--gold);
+  }
+  header p{
+    margin:0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .board{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 200px repeat(6, 1fr);
+    gap: 10px;
+    align-items:stretch;
+  }
+  .topic{
+    display:flex;
+    align-items:center;
+    background: var(--panel);
+    border: 1px solid #332f52;
+    border-radius: 10px;
+    padding: 0 16px;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .point-btn{
+    background: var(--panel-2);
+    border: 1px solid #3a355c;
+    border-radius: 10px;
+    color: var(--gold);
+    font-family: "Noto Serif Armenian", serif;
+    font-weight: 700;
+    font-size: 20px;
+    padding: 18px 0;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .point-btn:hover{
+    background: #322c56;
+    border-color: var(--gold-dim);
+    transform: translateY(-2px);
+  }
+  .point-btn:disabled{
+    background: var(--used);
+    border-color: #2a2740;
+    color: #55506f;
+    cursor: default;
+    transform:none;
+  }
+
+  .phase2-wrap{
+    border-top: 1px solid #332f52;
+    padding-top: 40px;
+  }
+  .stage-section{
+    display: none;
+  }
+  .stage-section.visible{
+    display: block;
+    animation: fadeIn .5s ease;
+  }
+  @keyframes fadeIn{
+    from{ opacity: 0; transform: translateY(12px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+  .continue-btn{
+    display:block;
+    margin: 32px auto 0;
+    background: var(--gold);
+    color: #241a08;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 32px;
+    font-family: "Noto Sans Armenian", sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease;
+  }
+  .continue-btn:hover{
+    background: #f2c25c;
+    transform: translateY(-2px);
+  }
+  .nav-row{
+    display:flex;
+    justify-content:center;
+    gap: 14px;
+    flex-wrap:wrap;
+  }
+  .nav-row .continue-btn{
+    margin-left:0;
+    margin-right:0;
+  }
+  .back-btn{
+    background: var(--panel-2);
+    color: var(--ink);
+    border: 1px solid #3a355c;
+  }
+  .back-btn:hover{
+    background: #322c56;
+    border-color: var(--gold-dim);
+  }
+  .phase2-board{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .phase2-btn{
+    background: var(--panel);
+    border: 1px solid #332f52;
+    border-radius: 14px;
+    padding: 34px 20px;
+    text-align:center;
+    cursor: pointer;
+    font-family: "Noto Serif Armenian", serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--ink);
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .phase2-btn .progress{
+    display:block;
+    margin-top: 10px;
+    font-family: "Noto Sans Armenian", sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .phase2-btn:hover{
+    background: #322c56;
+    border-color: var(--gold-dim);
+    transform: translateY(-2px);
+  }
+  .phase2-btn.done{
+    background: var(--used);
+    border-color: #2a2740;
+    color: #55506f;
+    cursor: default;
+    transform:none;
+  }
+  .phase2-btn.done .progress{ color: #4a4666; }
+
+  @media (max-width: 720px){
+    .phase2-board{ grid-template-columns: 1fr; }
+  }
+
+  /* Overlay */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(10,9,18,.92);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 32px;
+    cursor: pointer;
+    z-index: 50;
+  }
+  .overlay.show{ display:flex; }
+  .card{
+    max-width: 780px;
+    width:100%;
+    text-align:center;
+    cursor: default;
+  }
+  .card .label{
+    font-size: 14px;
+    letter-spacing: .04em;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .card .points-tag{
+    display:inline-block;
+    color: var(--gold);
+    font-family: "Noto Serif Armenian", serif;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 18px;
+    border: 1px solid var(--gold-dim);
+    border-radius: 999px;
+    padding: 4px 16px;
+  }
+  .card-img{
+    display:block;
+    max-width: 100%;
+    max-height: 46vh;
+    border-radius: 12px;
+    margin: 0 auto 22px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  }
+  .card-video{
+    display:block;
+    max-width: 100%;
+    max-height: 50vh;
+    border-radius: 12px;
+    margin: 0 auto 22px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  }
+  .card-audio{
+    display:block;
+    width: 100%;
+    max-width: 460px;
+    margin: 10px auto 26px;
+  }
+  .card .text{
+    font-family: "Noto Serif Armenian", serif;
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: pre-line;
+    margin-bottom: 26px;
+  }
+  .card .text.answer{ color: var(--teal); }
+  .card .hint{
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .card .close-btn{
+    margin-top: 10px;
+    background: var(--teal);
+    color: #0e2523;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 26px;
+    font-family: "Noto Sans Armenian", sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 720px){
+    .row{ grid-template-columns: 120px repeat(6, 1fr); }
+    .topic{ font-size: 12px; padding: 0 8px; }
+    .point-btn{ font-size: 15px; padding: 12px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap stage-section visible" id="phase1Section">
+  <header>
+    <h1 id="gameTitle">Գիտելիքների Մենամարտ</h1>
+    <p>Ընտրեք թեմա և միավորը</p>
+  </header>
+  <div class="board" id="board"></div>
+  <button class="continue-btn" id="continueToPhase2">Անցնել Փուլ 2 →</button>
+</div>
+
+<div class="wrap phase2-wrap stage-section" id="phase2Section">
+  <header>
+    <h1 id="phase2Title">Փուլ 2</h1>
+    <p>Ընտրեք թեման</p>
+  </header>
+  <div class="phase2-board" id="phase2Board"></div>
+  <div class="nav-row">
+    <button class="continue-btn back-btn" id="backToPhase1">← Վերադառնալ Փուլ 1</button>
+    <button class="continue-btn" id="continueToPhase3">Անցնել Փուլ 3 →</button>
+  </div>
+</div>
+
+<div class="wrap phase2-wrap stage-section" id="phase3Section">
+  <header>
+    <h1 id="phase3Title">Փուլ 3</h1>
+    <p>Թեման գաղտնի է. այն կպարզվի միայն ընտրելուց հետո</p>
+  </header>
+  <div class="phase2-board" id="phase3Board"></div>
+  <div class="nav-row">
+    <button class="continue-btn back-btn" id="backToPhase2">← Վերադառնալ Փուլ 2</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card" id="card">
+    <div class="points-tag" id="pointsTag"></div>
+    <div class="label" id="stageLabel">ՀԱՐՑ</div>
+    <img class="card-img" id="cardImg" style="display:none;" alt="" decoding="async">
+    <video class="card-video" id="cardVideo" style="display:none;" controls preload="none"></video>
+    <audio class="card-audio" id="cardAudio" style="display:none;" controls preload="none"></audio>
+    <div class="text" id="cardText"></div>
+    <div class="hint" id="hint">Սեղմեք էկրանին՝ պատասխանը տեսնելու համար</div>
+    <button class="close-btn" id="closeBtn" style="display:none;">Փակել և վերադառնալ</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay2">
+  <div class="card" id="card2">
+    <div class="points-tag" id="phase2Tag"></div>
+    <div class="label" id="phase2StageLabel">ՀԱՐՑ</div>
+    <video class="card-video" id="phase2Video" style="display:none;" controls preload="none"></video>
+    <div class="text" id="phase2Text"></div>
+    <div class="hint" id="phase2Hint">Սեղմեք էկրանին՝ պատասխանը տեսնելու համար</div>
+    <button class="close-btn" id="phase2CloseBtn" style="display:none;">Հաջորդ հարց</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay3">
+  <div class="card" id="card3">
+    <div class="points-tag" id="phase3Tag"></div>
+    <div class="label" id="phase3StageLabel">ՀԱՐՑ</div>
+    <div class="text" id="phase3Text"></div>
+    <div class="hint" id="phase3Hint">Սեղմեք էկրանին՝ պատասխանը տեսնելու համար</div>
+    <button class="close-btn" id="phase3CloseBtn" style="display:none;">Հաջորդ հարց</button>
+  </div>
+</div>
+
+<script>
+const RAW_GAME_DATA = [
+  {
+    topic: "Թեմա1",
+    questions: {
+      100: { question: "", answer: "", audio: "Փուլ1/Երգեր/1.mp3", answerAudio: "Փուլ1/Երգեր/1answer.mp3" },
+      200:  { question: "", answer: "", audio: "Փուլ1/Երգեր/5.mp3", answerAudio: "Փուլ1/Երգեր/5answer.mp3" },
+      300: { question: "", answer: "", audio: "Փուլ1/Երգեր/3.mp3", answerAudio: "Փուլ1/Երգեր/3answer.mp3" },
+      400: { question: "", answer: "", audio: "Փուլ1/Երգեր/6.mp3", answerAudio: "Փուլ1/Երգեր/6answer.mp3" },
+      500: { question: "", answer: "", audio: "Փուլ1/Երգեր/4.mp3", answerAudio: "Փուլ1/Երգեր/4answer.mp3" },
+      600:{ question: "", answer: "", audio: "Փուլ1/Երգեր/2.mp3", answerAudio: "Փուլ1/Երգեր/2answer.mp3" },
+    }
+  },
+  {
+
+    topic: "Թեմա2",
+    questions: {
+      100: { question: "", answer: "" },
+      200: { question: "", answer: "" },
+      300: { question: "", answer: "" },
+      400: { question: "", answer: "" },
+      500: { question: "", answer: "" },
+      600: { question:"", answer: "" }
+    }
+  },
+  
+  {
+    topic: "Թեմա3",
+    questions: {
+      100: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/100.jpg", answerImage: "Փուլ1/Հայտնիներ/answer100.jpg" },
+      200: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/200.jpg", answerImage: "Փուլ1/Հայտնիներ/answer200.jpg" },
+      300: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/500.jpg", answerImage: "Փուլ1/Հայտնիներ/answer500.jpg" },
+      400: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/400.jpg", answerImage: "Փուլ1/Հայտնիներ/answer400.jpg" },
+      500: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/Extra.jpg", answerImage: "Փուլ1/Հայտնիներ/extraanswer.webp" },
+      600: { question: "Ո՞վ է նկարում։", answer: "", image: "Փուլ1/Հայտնիներ/600.jpg", answerImage: "Փուլ1/Հայտնիներ/answer600.jpg" }
+    }
+  }
+];
+
+const GAME_DATA = RAW_GAME_DATA;
+
+const GAME_TITLE = "Գիտելիքների Մենամարտ";
+
+const POINT_VALUES = [100, 200, 300, 400, 500, 600];
+
+document.getElementById("gameTitle").textContent = GAME_TITLE;
+
+const board = document.getElementById("board");
+const overlay = document.getElementById("overlay");
+const card = document.getElementById("card");
+const cardText = document.getElementById("cardText");
+const pointsTag = document.getElementById("pointsTag");
+const stageLabel = document.getElementById("stageLabel");
+const hint = document.getElementById("hint");
+const closeBtn = document.getElementById("closeBtn");
+
+let currentBtn = null;
+let currentItem = null;
+let showingAnswer = false;
+
+const MEDIA_VOLUME_BOOST = 10;
+const audioContextCache = new WeakMap();
+
+function boostMediaVolume(element){
+  if (!element) return;
+
+  element.muted = false;
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) {
+    element.volume = Math.min(1, (element.volume || 1) * MEDIA_VOLUME_BOOST);
+    return;
+  }
+
+  let ctx = audioContextCache.get(element);
+  if (!ctx){
+    ctx = new AudioContextCtor();
+    const source = ctx.createMediaElementSource(element);
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = MEDIA_VOLUME_BOOST;
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    audioContextCache.set(element, ctx);
+  }
+
+  if (ctx.state === "suspended") {
+    ctx.resume();
+  }
+}
+
+GAME_DATA.forEach((topicData) => {
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const topicEl = document.createElement("div");
+  topicEl.className = "topic";
+  topicEl.textContent = topicData.topic;
+  row.appendChild(topicEl);
+
+  POINT_VALUES.forEach((pts) => {
+    const btn = document.createElement("button");
+    btn.className = "point-btn";
+    btn.textContent = pts;
+    btn.addEventListener("click", () => openQuestion(topicData, pts, btn));
+    row.appendChild(btn);
+  });
+
+  board.appendChild(row);
+});
+
+function openQuestion(topicData, pts, btn){
+  currentItem = topicData.questions[pts];
+  currentBtn = btn;
+  showingAnswer = false;
+
+  pointsTag.textContent = topicData.topic + " · " + pts;
+  stageLabel.textContent = "ՀԱՐՑ";
+  cardText.classList.remove("answer");
+  hint.style.display = "block";
+  closeBtn.style.display = "none";
+
+  const cardImg = document.getElementById("cardImg");
+  const cardVideo = document.getElementById("cardVideo");
+  const cardAudio = document.getElementById("cardAudio");
+  const hasImage = currentItem && currentItem.image;
+  const hasVideo = currentItem && currentItem.video;
+  const hasAudio = currentItem && currentItem.audio;
+
+  cardImg.style.display = "none";
+  cardImg.src = "";
+  cardVideo.pause();
+  cardVideo.style.display = "none";
+  cardVideo.removeAttribute("src");
+  cardVideo.load();
+  cardAudio.pause();
+  cardAudio.style.display = "none";
+  cardAudio.removeAttribute("src");
+  cardAudio.load();
+
+  if (hasVideo){
+    cardVideo.src = currentItem.video;
+    cardVideo.style.display = "block";
+    cardText.textContent = "";
+    cardText.style.display = "none";
+    boostMediaVolume(cardVideo);
+  } else if (hasAudio){
+    cardAudio.src = currentItem.audio;
+    cardAudio.load();
+    cardAudio.style.display = "block";
+    cardText.textContent = "";
+    cardText.style.display = "none";
+  } else if (hasImage){
+    cardImg.src = currentItem.image;
+    cardImg.style.display = "block";
+    cardText.textContent = "";
+    cardText.style.display = "none";
+  } else {
+    cardText.style.display = "block";
+    cardText.textContent = currentItem ? currentItem.question : "(հարցը լրացված չէ)";
+  }
+
+  overlay.classList.add("show");
+}
+
+function revealAnswer(){
+  showingAnswer = true;
+  stageLabel.textContent = "ՊԱՏԱՍԽԱՆ";
+  document.getElementById("cardVideo").pause();
+  const cardAudio = document.getElementById("cardAudio");
+  cardAudio.pause();
+  const cardImg = document.getElementById("cardImg");
+  if (currentItem && currentItem.answerImage){
+    cardImg.src = currentItem.answerImage;
+    cardImg.style.display = "block";
+  }
+  if (currentItem && currentItem.answerAudio){
+    cardAudio.src = currentItem.answerAudio;
+    cardAudio.load();
+    cardAudio.style.display = "block";
+    cardText.style.display = "block";
+    cardText.textContent = currentItem.answer;
+  } else {
+    cardAudio.style.display = "none";
+    cardAudio.removeAttribute("src");
+    cardAudio.load();
+    cardText.style.display = "block";
+    cardText.textContent = currentItem ? currentItem.answer : "(պատասխանը լրացված չէ)";
+  }
+  cardText.classList.add("answer");
+  hint.style.display = "none";
+  closeBtn.style.display = "inline-block";
+}
+
+function closeOverlay(){
+  overlay.classList.remove("show");
+  if (currentBtn){
+    currentBtn.disabled = true;
+  }
+  currentBtn = null;
+  currentItem = null;
+}
+
+overlay.addEventListener("click", (e) => {
+  if (!showingAnswer){
+    revealAnswer();
+  }
+});
+
+document.getElementById("cardVideo").addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+document.getElementById("cardAudio").addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+document.getElementById("continueToPhase2").addEventListener("click", () => {
+  document.getElementById("phase1Section").classList.remove("visible");
+  const section = document.getElementById("phase2Section");
+  section.classList.add("visible");
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("continueToPhase3").addEventListener("click", () => {
+  document.getElementById("phase2Section").classList.remove("visible");
+  const section = document.getElementById("phase3Section");
+  section.classList.add("visible");
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("backToPhase1").addEventListener("click", () => {
+  document.getElementById("phase2Section").classList.remove("visible");
+  const section = document.getElementById("phase1Section");
+  section.classList.add("visible");
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+document.getElementById("backToPhase2").addEventListener("click", () => {
+  document.getElementById("phase3Section").classList.remove("visible");
+  const section = document.getElementById("phase2Section");
+  section.classList.add("visible");
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+closeBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeOverlay();
+});
+
+
+   
+const PHASE2_DATA = [
+  {
+    topic: "Թեմա1",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+     topic: "Թեմա2",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+    topic: "Թեմա3",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+   topic: "Թեմա4",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  }
+];
+
+
+
+const phase2Board = document.getElementById("phase2Board");
+const overlay2 = document.getElementById("overlay2");
+const phase2Tag = document.getElementById("phase2Tag");
+const phase2StageLabel = document.getElementById("phase2StageLabel");
+const phase2Text = document.getElementById("phase2Text");
+const phase2Hint = document.getElementById("phase2Hint");
+const phase2CloseBtn = document.getElementById("phase2CloseBtn");
+
+let p2Topic = null;
+let p2Btn = null;
+let p2Index = 0;
+let p2ShowingAnswer = false;
+
+PHASE2_DATA.forEach((topicData) => {
+  const btn = document.createElement("div");
+  btn.className = "phase2-btn";
+  btn.innerHTML = topicData.topic + '<span class="progress">0/' + topicData.questions.length + '</span>';
+  btn.addEventListener("click", () => openPhase2Topic(topicData, btn));
+  phase2Board.appendChild(btn);
+});
+
+function openPhase2Topic(topicData, btn){
+  p2Topic = topicData;
+  p2Btn = btn;
+  p2Index = 0;
+  showPhase2Question();
+  overlay2.classList.add("show");
+}
+
+function showPhase2Question(){
+  p2ShowingAnswer = false;
+  const item = p2Topic.questions[p2Index];
+  phase2Tag.textContent = p2Topic.topic + " · " + (p2Index + 1) + "/" + p2Topic.questions.length;
+  phase2StageLabel.textContent = "ՀԱՐՑ";
+  phase2Text.classList.remove("answer");
+  phase2Hint.style.display = "block";
+  phase2CloseBtn.style.display = "none";
+
+  const phase2Video = document.getElementById("phase2Video");
+  phase2Video.pause();
+  phase2Video.removeAttribute("src");
+  phase2Video.load();
+
+  if (item.video){
+    phase2Video.src = item.video;
+    phase2Video.style.display = "block";
+    phase2Text.textContent = "";
+    phase2Text.style.display = "none";
+    boostMediaVolume(phase2Video);
+  } else {
+    phase2Video.style.display = "none";
+    phase2Text.style.display = "block";
+    phase2Text.textContent = item.question;
+  }
+}
+
+function revealPhase2Answer(){
+  p2ShowingAnswer = true;
+  const item = p2Topic.questions[p2Index];
+  const phase2Video = document.getElementById("phase2Video");
+  phase2Video.pause();
+  phase2StageLabel.textContent = "ՊԱՏԱՍԽԱՆ";
+  phase2Text.style.display = "block";
+  phase2Text.textContent = item.answer;
+  phase2Text.classList.add("answer");
+  phase2Hint.style.display = "none";
+  const isLast = p2Index === p2Topic.questions.length - 1;
+  phase2CloseBtn.textContent = isLast ? "Փակել և վերադառնալ" : "Հաջորդ հարց";
+  phase2CloseBtn.style.display = "inline-block";
+}
+
+function advancePhase2(){
+  const btnProgress = p2Btn.querySelector(".progress");
+  btnProgress.textContent = (p2Index + 1) + "/" + p2Topic.questions.length;
+
+  if (p2Index < p2Topic.questions.length - 1){
+    p2Index++;
+    showPhase2Question();
+  } else {
+    p2Btn.classList.add("done");
+    overlay2.classList.remove("show");
+    p2Topic = null;
+    p2Btn = null;
+  }
+}
+
+overlay2.addEventListener("click", () => {
+  if (!p2ShowingAnswer){
+    revealPhase2Answer();
+  }
+});
+
+document.getElementById("phase2Video").addEventListener("click", (e) => {
+  e.stopPropagation();
+});
+
+phase2CloseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  advancePhase2();
+});
+
+
+const PHASE3_DATA = [
+  {
+    topic: "Թեմա1",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+   topic: "Թեմա2",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+  topic: "Թեմա3",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  },
+  {
+  topic: "Թեմա4",
+    questions: [
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" },
+      { question: "", answer: "" }
+    ]
+  }
+];
+
+
+const phase3Board = document.getElementById("phase3Board");
+const overlay3 = document.getElementById("overlay3");
+const phase3Tag = document.getElementById("phase3Tag");
+const phase3StageLabel = document.getElementById("phase3StageLabel");
+const phase3Text = document.getElementById("phase3Text");
+const phase3Hint = document.getElementById("phase3Hint");
+const phase3CloseBtn = document.getElementById("phase3CloseBtn");
+
+let p3Topic = null;
+let p3Btn = null;
+let p3Index = 0;
+let p3ShowingTopic = false;
+let p3ShowingAnswer = false;
+
+PHASE3_DATA.forEach((topicData, i) => {
+  const btn = document.createElement("div");
+  btn.className = "phase2-btn";
+  btn.innerHTML = "Թեմա " + (i + 1) + '<span class="progress">անհայտ</span>';
+  btn.addEventListener("click", () => openPhase3Topic(topicData, btn));
+  phase3Board.appendChild(btn);
+});
+
+function openPhase3Topic(topicData, btn){
+  p3Topic = topicData;
+  p3Btn = btn;
+  p3Index = 0;
+  p3ShowingTopic = true;
+  p3ShowingAnswer = false;
+  btn.querySelector(".progress").textContent = topicData.topic + " · 1/" + topicData.questions.length;
+  showPhase3Topic();
+  overlay3.classList.add("show");
+}
+
+function showPhase3Topic(){
+  phase3Tag.textContent = "ՓՈՒԼ 3";
+  phase3StageLabel.textContent = "ԹԵՄԱ";
+  phase3Text.textContent = p3Topic.topic;
+  phase3Text.classList.remove("answer");
+  phase3Hint.textContent = "Սեղմեք էկրանին՝ հարցերը սկսելու համար";
+  phase3Hint.style.display = "block";
+  phase3CloseBtn.style.display = "none";
+}
+
+function showPhase3Question(){
+  p3ShowingTopic = false;
+  p3ShowingAnswer = false;
+  const item = p3Topic.questions[p3Index];
+  phase3Tag.textContent = p3Topic.topic + " · " + (p3Index + 1) + "/" + p3Topic.questions.length;
+  phase3StageLabel.textContent = "ՀԱՐՑ";
+  phase3Text.textContent = item.question;
+  phase3Text.classList.remove("answer");
+  phase3Hint.textContent = "Սեղմեք էկրանին՝ պատասխանը տեսնելու համար";
+  phase3Hint.style.display = "block";
+  phase3CloseBtn.style.display = "none";
+}
+
+function revealPhase3Answer(){
+  p3ShowingAnswer = true;
+  const item = p3Topic.questions[p3Index];
+  phase3StageLabel.textContent = "ՊԱՏԱՍԽԱՆ";
+  phase3Text.textContent = item.answer;
+  phase3Text.classList.add("answer");
+  phase3Hint.style.display = "none";
+  const isLast = p3Index === p3Topic.questions.length - 1;
+  phase3CloseBtn.textContent = isLast ? "Փակել և վերադառնալ" : "Հաջորդ հարց";
+  phase3CloseBtn.style.display = "inline-block";
+}
+
+function advancePhase3(){
+  const btnProgress = p3Btn.querySelector(".progress");
+  btnProgress.textContent = p3Topic.topic + " · " + (p3Index + 1) + "/" + p3Topic.questions.length;
+
+  if (p3Index < p3Topic.questions.length - 1){
+    p3Index++;
+    showPhase3Question();
+  } else {
+    p3Btn.classList.add("done");
+    overlay3.classList.remove("show");
+    p3Topic = null;
+    p3Btn = null;
+  }
+}
+
+overlay3.addEventListener("click", () => {
+  if (p3ShowingTopic){
+    showPhase3Question();
+  } else if (!p3ShowingAnswer){
+    revealPhase3Answer();
+  }
+});
+
+phase3CloseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  advancePhase3();
+});
+</script>
+
+</body>
+</html>
